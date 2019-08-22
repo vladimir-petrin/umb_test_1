@@ -1,0 +1,33 @@
+AllCops:
+  DisplayCopNames: true
+  StyleGuideCopsOnly: false
+  TargetRubyVersion: 2.6
+  Exclude:
+    - db/**/*
+    - script/**/*
+    - bin/**/*
+    - vendor/**/*
+    - tmp/**/*
+    - config/initializers/**/*
+    - config/environments/**/*
+    - config/application.rb
+    - ./Gemfile
+    - ./Rakefile
+    - ./config.ru
+    - spec/**/*
+
+Metrics/LineLength:
+  Max: 120
+
+Metrics/MethodLength:
+  Max: 20
+
+Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/StringLiterals:
+  Exclude:
+    - config/**/*
