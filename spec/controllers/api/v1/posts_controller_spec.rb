@@ -33,7 +33,7 @@ RSpec.describe Api::V1::PostsController, type: :request do
       end
     end
 
-    it 'return posts ordered by average score' do
+    it 'return posts ordered by average score (desc, nulls last)' do
       get '/api/v1/posts'
 
       json = JSON.parse(response.body)
@@ -48,6 +48,22 @@ RSpec.describe Api::V1::PostsController, type: :request do
           posts[5].as_json(only: %i[title content]),
         ]
       )
+    end
+
+    context 'when limit provided' do
+      it 'return requested number of records' do
+        get '/api/v1/posts', params: { limit: 3 }
+
+        json = JSON.parse(response.body)
+
+        expect(json).to eq(
+          [
+            posts[4].as_json(only: %i[title content]),
+            posts[3].as_json(only: %i[title content]),
+            posts[2].as_json(only: %i[title content])
+          ]
+        )
+      end
     end
   end
 

@@ -37,7 +37,7 @@ RSpec.describe Api::V1::ServiceController, type: :request do
       end
     end
 
-    context 'when at least one requested user do not exist' do
+    context 'when at least one requested user does not exist' do
       before do
         get api_v1_service_posters_path, params: { logins: ['vasya', 'nikolay', 'alisa'] }
       end
