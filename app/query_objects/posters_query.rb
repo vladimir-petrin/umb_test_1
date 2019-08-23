@@ -6,6 +6,11 @@ class PostersQuery < DryService
         .where('users.login' => logins)
         .group('posts.author_ip')
         .pluck('posts.author_ip', 'JSON_AGG(users.login)')
-        .map { |poster_info| [poster_info[0].to_s, poster_info[1]] }
+        .map do |poster_info|
+          {
+            ip: poster_info[0].to_s,
+            users: poster_info[1]
+          }
+        end
   end
 end

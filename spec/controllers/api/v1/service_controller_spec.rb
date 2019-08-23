@@ -30,8 +30,8 @@ RSpec.describe Api::V1::ServiceController, type: :request do
         json = JSON.parse(response.body)
         expect(json).to match_array(
           [
-            ['127.0.0.1', ['vasya', 'nikolay']],
-            ['192.168.1.1', ['vasya']]
+            { "ip" => '127.0.0.1', "users" => ['vasya', 'nikolay'] },
+            { "ip" => '192.168.1.1', "users" => ['vasya'] }
           ]
         )
       end
