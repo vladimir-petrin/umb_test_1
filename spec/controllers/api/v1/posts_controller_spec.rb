@@ -1,5 +1,24 @@
 require 'rails_helper'
 
+RSpec.shared_examples :create_post_failure do |params, expected_errors|
+  it 'does not create post' do
+    expect do
+      post '/api/v1/posts', params: params
+    end.to_not change { Post.count }.from(0)
+  end
+
+  it 'returns response with 422 status' do
+    post '/api/v1/posts', params: params
+    expect(response).to have_http_status(422)
+  end
+
+  it 'returns errors' do
+    post '/api/v1/posts', params: params
+    json = JSON.parse(response.body)
+    expect(json).to match(expected_errors)
+  end
+end
+
 RSpec.describe Api::V1::PostsController, type: :request do
   describe '#index' do
     let!(:posts) do
@@ -36,15 +55,15 @@ RSpec.describe Api::V1::PostsController, type: :request do
     context 'valid params' do
       let(:params) do
         {
-          login: 'vasya',
-          title: 'Test title',
-          content: 'Test content',
+          login: 'leia-organa',
+          title: 'Lorem ipsum',
+          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
           author_ip: '192.168.1.1'
         }
       end
 
       context 'when user exists' do
-        let!(:user) { create(:user, login: 'vasya') }
+        let!(:user) { create(:user, login: 'leia-organa') }
 
         it 'creates post' do
           expect do
@@ -62,8 +81,8 @@ RSpec.describe Api::V1::PostsController, type: :request do
           json = JSON.parse(response.body)
           expect(json).to include(
             'user_id' => user.id,
-            'title' => 'Test title',
-            'content' => 'Test content',
+            'title' => 'Lorem ipsum',
+            'content' => 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'author_ip' => '192.168.1.1',
             'avg_score' => nil
           )
@@ -92,8 +111,9 @@ RSpec.describe Api::V1::PostsController, type: :request do
           post '/api/v1/posts', params: params
           json = JSON.parse(response.body)
           expect(json).to include(
-            'title' => 'Test title',
-            'content' => 'Test content',
+            'user_id' => User.first.id,
+            'title' => 'Lorem ipsum',
+            'content' => 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
             'author_ip' => '192.168.1.1',
             'avg_score' => nil
           )
@@ -102,30 +122,154 @@ RSpec.describe Api::V1::PostsController, type: :request do
     end
 
     context 'invalid params' do
-      let(:params) do
-        {
-          login: ['not_a_string'],
-          content: '',
-          author_ip: 'abra-kadabra'
-        }
+      context 'login not a string' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: ['leia-organa'],
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "login" => ["must be a string"] }
       end
 
-      before do
-        post '/api/v1/posts', params: params
+      context 'login missing' do
+        it_behaves_like :create_post_failure,
+                        {
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "login" => ["is missing"] }
       end
 
-      it 'returns response with 422 status' do
-        expect(response).to have_http_status(422)
+      context 'login empty' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: '',
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "login" => ["must be filled"] }
       end
 
-      it 'returns errors' do
-        json = JSON.parse(response.body)
-        expect(json).to match(
-          "login"=>["must be a string"],
-          "title"=>["is missing"],
-          "content"=>["must be filled"],
-          "author_ip"=>["not a vaild IPv4 or IPv6 format"]
-        )
+      context 'login does not match login regexp' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia~organa',
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "login" => ["not a valid login"] }
+      end
+
+      context 'title not a string' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: ['Lorem ipsum'],
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "title" => ["must be a string"] }
+      end
+
+      context 'title missing' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "title" => ["is missing"] }
+      end
+
+      context 'title empty' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: '',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "title" => ["must be filled"] }
+      end
+
+      context 'content not a string' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: 'Lorem ipsum',
+                          content: ['dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'],
+                          author_ip: '192.168.1.1'
+                        },
+                        { "content" => ["must be a string"] }
+      end
+
+      context 'content missing' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: 'Lorem ipsum',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "content" => ["is missing"] }
+      end
+
+      context 'content empty' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: 'Lorem ipsum',
+                          content: '',
+                          author_ip: '192.168.1.1'
+                        },
+                        { "content" => ["must be filled"] }
+      end
+
+      context 'author_ip not a string' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: ['192.168.1.1']
+                        },
+                        { "author_ip" => ["must be a string"] }
+      end
+
+      context 'author_ip missing' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
+                        },
+                        { "author_ip" => ["is missing"] }
+      end
+
+      context 'author_ip empty' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: ''
+                        },
+                        { "author_ip" => ["must be filled"] }
+      end
+
+      context 'author_ip does not match IP regexp' do
+        it_behaves_like :create_post_failure,
+                        {
+                          login: 'leia-organa',
+                          title: 'Lorem ipsum',
+                          content: 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                          author_ip: '192.168.1.zzz'
+                        },
+                        { "author_ip" => ["not a vaild IPv4 or IPv6 format"] }
       end
     end
   end
