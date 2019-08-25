@@ -48,7 +48,7 @@ RSpec.describe Api::V1::PostsController, type: :request do
       it 'returns new post average score' do
         post api_v1_post_scores_path(post_instance), params: { value: 5 }
         json = JSON.parse(response.body)
-        expect(json).to match("avg_score"=>450)
+        expect(json).to match("avg_score"=>4.5)
       end
     end
 
