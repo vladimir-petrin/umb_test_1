@@ -10,7 +10,7 @@ module Api
 
         CreateScoreService.call(post, validation_result.to_h)
 
-        render json: { avg_score: post.reload.avg_score }, status: 200
+        render json: { avg_score: (post.reload.avg_score.to_f / 100) }, status: 200
       rescue ActiveRecord::RecordNotFound
         render json: { post: ['Not found'] }, status: 404
       end
