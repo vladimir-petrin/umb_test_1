@@ -9,7 +9,7 @@ class PostersQuery < DryService
         .map do |poster_info|
           {
             ip: poster_info[0].to_s,
-            users: poster_info[1]
+            users: poster_info[1].uniq
           }
         end
   end
