@@ -23,7 +23,9 @@ RSpec.describe Api::V1::PostsController, type: :request do
   describe '#index' do
     let!(:posts) do
       (0..5).map do
-        create(:post)
+        post = create(:post)
+        post.create_avg_score(avg_value: 0)
+        post
       end
     end
 
@@ -99,8 +101,7 @@ RSpec.describe Api::V1::PostsController, type: :request do
             'user_id' => user.id,
             'title' => 'Lorem ipsum',
             'content' => 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-            'author_ip' => '192.168.1.1',
-            'avg_score' => nil
+            'author_ip' => '192.168.1.1'
           )
         end
       end
@@ -130,8 +131,7 @@ RSpec.describe Api::V1::PostsController, type: :request do
             'user_id' => User.first.id,
             'title' => 'Lorem ipsum',
             'content' => 'dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-            'author_ip' => '192.168.1.1',
-            'avg_score' => nil
+            'author_ip' => '192.168.1.1'
           )
         end
       end
