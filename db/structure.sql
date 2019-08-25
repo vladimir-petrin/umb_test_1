@@ -245,7 +245,7 @@ CREATE INDEX index_posts_on_author_ip ON public.posts USING btree (author_ip);
 -- Name: index_posts_on_avg_score; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_posts_on_avg_score ON public.posts USING btree (avg_score);
+CREATE INDEX index_posts_on_avg_score ON public.posts USING btree (avg_score DESC NULLS LAST);
 
 
 --
