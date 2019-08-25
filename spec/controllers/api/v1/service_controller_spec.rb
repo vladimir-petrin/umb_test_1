@@ -17,7 +17,7 @@ RSpec.describe Api::V1::ServiceController, type: :request do
       ]
     end
 
-    context 'when requested users exist' do
+    context 'when logins is array of logins of existing users' do
       before do
         get api_v1_service_posters_path, params: { logins: ['vasya', 'nikolay'] }
       end
@@ -37,18 +37,50 @@ RSpec.describe Api::V1::ServiceController, type: :request do
       end
     end
 
-    context 'when at least one requested user does not exist' do
-      before do
-        get api_v1_service_posters_path, params: { logins: ['vasya', 'nikolay', 'alisa'] }
+    context 'invalid params' do
+      context 'when logins is not array' do
+        before do
+          get api_v1_service_posters_path, params: { logins: { vasya: :nikolay } }
+        end
+
+        it 'returns response with 422 status' do
+          expect(response).to have_http_status(422)
+        end
+
+        it 'returns errors' do
+          json = JSON.parse(response.body)
+          expect(json).to eq("logins"=>["must be an array"])
+        end
       end
 
-      it 'returns response with 200 status' do
-        expect(response).to have_http_status(422)
+      context 'when some logins empty' do
+        before do
+          get api_v1_service_posters_path, params: { logins: ['vasya', ''] }
+        end
+
+        it 'returns response with 422 status' do
+          expect(response).to have_http_status(422)
+        end
+
+        it 'returns errors' do
+          json = JSON.parse(response.body)
+          expect(json).to eq("logins" => {"1"=>["must be filled"]})
+        end
       end
 
-      it 'returns errors' do
-        json = JSON.parse(response.body)
-        expect(json).to eq("logins"=>["users with logins: [\"alisa\"] not found"])
+      context 'when at least one requested user does not exist' do
+        before do
+          get api_v1_service_posters_path, params: { logins: ['vasya', 'nikolay', 'alisa'] }
+        end
+
+        it 'returns response with 200 status' do
+          expect(response).to have_http_status(422)
+        end
+
+        it 'returns errors' do
+          json = JSON.parse(response.body)
+          expect(json).to eq("logins"=>["users with logins: [\"alisa\"] not found"])
+        end
       end
     end
   end
