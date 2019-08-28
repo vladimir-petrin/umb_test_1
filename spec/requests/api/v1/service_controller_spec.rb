@@ -73,7 +73,7 @@ RSpec.describe Api::V1::ServiceController, type: :request do
           get api_v1_service_posters_path, params: { logins: ['vasya', 'nikolay', 'alisa'] }
         end
 
-        it 'returns response with 200 status' do
+        it 'returns response with 422 status' do
           expect(response).to have_http_status(422)
         end
 

@@ -21,12 +21,6 @@ module Api
         render json: post.as_json(except: %i[author_ip]).merge('author_ip' => post.author_ip.to_s),
                status: 200
       end
-
-      private
-
-      def render_errors(validation_result)
-        render json: validation_result.errors.to_h, status: 422
-      end
     end
   end
 end
