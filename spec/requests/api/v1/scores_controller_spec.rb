@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.shared_examples :create_score_contract_failure do |params, expected_errors|
   let!(:post_instance) { create(:post) }
+  let!(:avg_score) { create(:avg_score, post: post_instance, avg_value: 0) }
 
   it 'does not create post' do
     expect do
@@ -36,7 +37,7 @@ RSpec.describe Api::V1::PostsController, type: :request do
       it 'changes average score' do
         expect do
           post api_v1_post_scores_path(post_instance), params: { value: 5 }
-        end.to change { post_instance.reload.avg_score }.from(400).to(450)
+        end.to change { post_instance.reload.avg_score_value }.from(400).to(450)
       end
 
       it 'return response with 200 status' do

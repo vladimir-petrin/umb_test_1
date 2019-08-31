@@ -32,23 +32,33 @@ CREATE FUNCTION public.update_avg_score_function() RETURNS trigger
     AS $$
         BEGIN
           IF    TG_OP = 'INSERT' THEN
-            UPDATE posts
-            SET avg_score = (SELECT AVG(value * 100) FROM scores WHERE scores.post_id = posts.id)
-            WHERE id = NEW.post_id;
+            INSERT INTO avg_scores (post_id, avg_value)
+            VALUES (NEW.post_id, COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = NEW.post_id), 0))
+            ON CONFLICT (post_id)
+            DO UPDATE SET avg_value = COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = NEW.post_id), 0);
 
             RETURN NEW;
           ELSIF TG_OP = 'UPDATE' THEN
-            IF NEW.post_id <> OLD.post_id OR NEW.value <> OLD.value THEN
-              UPDATE posts
-              SET avg_score = (SELECT AVG(value * 100) FROM scores WHERE scores.post_id = posts.id)
-              WHERE id = NEW.post_id OR id = OLD.post_id;
+            IF NEW.value <> OLD.value OR NEW.post_id <> OLD.post_id THEN
+              INSERT INTO avg_scores (post_id, avg_value)
+              VALUES (NEW.post_id, COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = NEW.post_id), 0))
+              ON CONFLICT (post_id)
+              DO UPDATE SET avg_value = COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = NEW.post_id), 0);
+
+              IF NEW.post_id <> OLD.post_id THEN
+                INSERT INTO avg_scores (post_id, avg_value)
+                VALUES (OLD.post_id, COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = OLD.post_id), 0))
+                ON CONFLICT (post_id)
+                DO UPDATE SET avg_value = COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = OLD.post_id), 0);
+              END IF;
             END IF;
 
             RETURN NEW;
           ELSIF TG_OP = 'DELETE' THEN
-            UPDATE posts
-            SET avg_score = (SELECT AVG(value * 100) FROM scores WHERE scores.post_id = posts.id)
-            WHERE id = OLD.post_id;
+            INSERT INTO avg_scores (post_id, avg_value)
+            VALUES (OLD.post_id, COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = OLD.post_id), 0))
+            ON CONFLICT (post_id)
+            DO UPDATE SET avg_value = COALESCE((SELECT AVG(value * 100) FROM scores WHERE scores.post_id = OLD.post_id), 0);
 
             RETURN OLD;
           END IF;
@@ -73,6 +83,36 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: avg_scores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.avg_scores (
+    id bigint NOT NULL,
+    post_id integer NOT NULL,
+    avg_value integer
+);
+
+
+--
+-- Name: avg_scores_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.avg_scores_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: avg_scores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.avg_scores_id_seq OWNED BY public.avg_scores.id;
+
+
+--
 -- Name: posts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -81,8 +121,7 @@ CREATE TABLE public.posts (
     user_id integer NOT NULL,
     title character varying NOT NULL,
     content text NOT NULL,
-    author_ip inet NOT NULL,
-    avg_score smallint
+    author_ip inet NOT NULL
 );
 
 
@@ -174,6 +213,13 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: avg_scores id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.avg_scores ALTER COLUMN id SET DEFAULT nextval('public.avg_scores_id_seq'::regclass);
+
+
+--
 -- Name: posts id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -200,6 +246,14 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: avg_scores avg_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.avg_scores
+    ADD CONSTRAINT avg_scores_pkey PRIMARY KEY (id);
 
 
 --
@@ -235,17 +289,24 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: index_avg_scores_on_avg_value; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_avg_scores_on_avg_value ON public.avg_scores USING btree (avg_value DESC);
+
+
+--
+-- Name: index_avg_scores_on_post_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_avg_scores_on_post_id ON public.avg_scores USING btree (post_id);
+
+
+--
 -- Name: index_posts_on_author_ip; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_posts_on_author_ip ON public.posts USING btree (author_ip);
-
-
---
--- Name: index_posts_on_avg_score; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_posts_on_avg_score ON public.posts USING btree (avg_score DESC NULLS LAST);
 
 
 --
@@ -293,6 +354,14 @@ ALTER TABLE ONLY public.scores
 
 
 --
+-- Name: avg_scores fk_rails_a2eef9e71b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.avg_scores
+    ADD CONSTRAINT fk_rails_a2eef9e71b FOREIGN KEY (post_id) REFERENCES public.posts(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -302,6 +371,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190821181935'),
 ('20190821182820'),
 ('20190821183000'),
-('20190821194254');
+('20190825094946'),
+('20190825095242');
 
 
